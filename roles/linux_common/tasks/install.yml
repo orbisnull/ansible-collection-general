@@ -1,0 +1,13 @@
+---
+
+- name: Install base packages
+  become: yes
+  apt:
+    name: "{{linux_common_packages}}"
+    state: latest
+
+- name: Install additional packages
+  become: yes
+  apt:
+    name: "{{linux_common_additional_packages}}"
+    state: latest

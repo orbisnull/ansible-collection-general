@@ -1,0 +1,19 @@
+---
+# defaults file for common
+
+reboot_if_need: true
+
+allow_upgrade: true
+
+locales:
+  - en_US.UTF-8
+  - ru_RU.UTF-8
+
+locale: en_US.UTF-8
+
+timezone:
+  areas: Etc
+  zone: UTC
+
+linux_common_additional_packages: []
+

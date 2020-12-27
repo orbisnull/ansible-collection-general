@@ -1,0 +1,13 @@
+---
+- hosts: Linux
+  gather_facts: False
+  vars:
+    ansible_host_key_checking: false
+    ansible_ssh_extra_args: "{{ ansible_ssh_extra_args_base }} -o StrictHostKeyChecking=no -o ControlMaster=auto -o ControlPersist=60s -o ControlPath=~/.ansible/cp/ssh-%h-%p-%r"
+    ansible_ssh_pipelining: False
+  tasks:
+  - name: install python 3
+    raw: test -e /usr/bin/python3 || (apt -y update && apt install -y python3)
+    become: yes
+    register: output
+    changed_when: output.stdout

@@ -1,0 +1,19 @@
+- name: Set default locale to en_US.UTF-8
+  debconf:
+    name: locales
+    question: locales/default_environment_locale
+    value: "{{ locale }}"
+    vtype: select
+  become: yes
+
+- name: set to generate locales
+  community.general.locale_gen:
+    name: "{{ item }}"
+    state: present
+  become: yes
+  loop: "{{ locales }}"
+
+- name: "Set timezone to {{timezone.areas}}/{{timezone.zone}}"
+  community.general.timezone:
+    name: "{{timezone.areas}}/{{timezone.zone}}"
+  become: yes

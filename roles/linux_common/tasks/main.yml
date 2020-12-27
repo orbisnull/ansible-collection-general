@@ -1,0 +1,29 @@
+---
+
+- import_tasks: 'repos.yml'
+
+- import_tasks: 'update.yml'
+
+- import_tasks: 'install.yml'
+
+- name: "Set hostname {{inventory_hostname_short}}"
+  hostname:
+    name: "{{inventory_hostname_short}}"
+  become: yes
+  notify: os reboot
+
+- name: enable SSH forwarding for sudo
+  lineinfile:
+    dest: /etc/sudoers
+    insertafter: '^#?\s*Defaults\s+env_keep\b'
+    line: 'Defaults    env_keep += "SSH_AUTH_SOCK"'
+  become: yes
+
+- name: Disable sudo requiretty
+  lineinfile:
+    dest: /etc/sudoers
+    insertafter: 'Defaults        env_reset'
+    line: 'Defaults        !requiretty'
+  become: yes
+
+- import_tasks: 'locale_timezone.yml'

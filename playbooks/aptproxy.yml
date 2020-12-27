@@ -1,0 +1,20 @@
+---
+
+- hosts: Linux
+  gather_facts: False
+
+  tasks:
+
+    - name: Check apt_proxy_address variable exist
+      fail: msg="The variable 'apt_proxy_address' is empty"
+      when: apt_proxy_address|length == 0
+    - name: Check apt_proxy_port variable exist
+      fail: msg="The variable 'apt_proxy_port' is empty"
+      when: apt_proxy_port|string|length == 0
+
+    - name: Set apt proxy
+      lineinfile:
+        dest: /etc/apt/apt.conf.d/02proxy
+        line: "Acquire::http::Proxy \"http://{{apt_proxy_address}}:{{apt_proxy_port}}\";"
+        create: yes
+      become: yes

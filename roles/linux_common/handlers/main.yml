@@ -1,0 +1,20 @@
+---
+# handlers file for common
+
+- name: os reboot
+  shell: sleep 2 && /sbin/reboot
+  async: 1
+  poll: 0
+  ignore_errors: true
+  when: (inventory_hostname!="localhost" or ansible_connection=="local" or  ansible_host=="127.0.0.1") and reboot_if_need
+  notify: wait os reboot
+  become: yes
+
+- name: wait os reboot
+  become: no
+  local_action: wait_for
+  args:
+    delay: 10
+    timeout: 180
+    host: "{{ ansible_ssh_host }}"
+    state: started

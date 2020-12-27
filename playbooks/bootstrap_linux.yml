@@ -1,0 +1,75 @@
+---
+
+- import_playbook: ufw_ssh_allow.yml
+  vars:
+    ansible_host_key_checking: false
+    ansible_ssh_extra_args: "{{ ansible_ssh_extra_args_base }} -o StrictHostKeyChecking=no -o ControlMaster=no -o ControlPath=none"
+    ansible_ssh_user: root
+    ansible_ssh_pipelining: False
+
+- import_playbook: bootstrap_linux_python.yml
+  vars:
+    ansible_host_key_checking: false
+    ansible_ssh_extra_args: "{{ ansible_ssh_extra_args_base }} -o StrictHostKeyChecking=no -o ControlMaster=no -o ControlPath=none"
+    ansible_ssh_user: root
+    ansible_ssh_pipelining: False
+
+- hosts: Linux
+  gather_facts: False
+  vars:
+    ansible_host_key_checking: false
+    ansible_ssh_extra_args: "{{ ansible_ssh_extra_args_base }} -o StrictHostKeyChecking=no -o ControlMaster=no -o ControlPath=none"
+    ansible_ssh_user: root
+    ansible_ssh_pipelining: False
+
+    salt: "{{ lookup('password', '../../../../../data/.ansible_user_salt chars=ascii_letters,digits length=10') }}"
+
+  tasks:
+
+    - name: Install | sudo
+      apt:
+        name: sudo
+        state: present
+    - name: enable SSH forwarding for sudo
+      lineinfile:
+        dest: /etc/sudoers
+        insertafter: '^#?\s*Defaults\s+env_keep\b'
+        line: 'Defaults    env_keep += "SSH_AUTH_SOCK"'
+
+    - name: Disable sudo requiretty
+      lineinfile:
+        dest: /etc/sudoers
+        insertafter: 'Defaults        env_reset'
+        line: 'Defaults        !requiretty'
+
+    - name: SSH  ClientAliveInterval
+      lineinfile:
+        dest: /etc/ssh/sshd_config
+        insertbefore: '# no default banner path'
+        line: 'ClientAliveInterval 60'
+
+    - name: SSH  ClientAliveCountMax
+      lineinfile:
+        dest: /etc/ssh/sshd_config
+        insertafter: 'ClientAliveInterval 60'
+        line: 'ClientAliveCountMax 180'
+
+    - name: LinuxGuestBootstrap | Add default user
+      user:
+        name: "{{linux_default_user}}"
+        password: "{{ linux_default_user_password | password_hash('sha512', salt) }}"
+        shell: /bin/bash
+        groups:
+          - sudo
+        state: present
+
+    - name: Set authorized key to default user
+      ansible.posix.authorized_key:
+        user: "{{linux_default_user}}"
+        state: present
+        key: "{{linux_default_user_ssh_pub}}"
+
+    - name: shhd restart
+      raw: systemctl restart ssh
+      become: yes
+      changed_when:

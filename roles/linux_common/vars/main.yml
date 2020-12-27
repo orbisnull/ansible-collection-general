@@ -1,0 +1,21 @@
+---
+linux_common_packages:
+  - sudo
+  - mc
+  - htop
+  - tmux
+  - nano
+  - pv
+  - wget
+  - curl
+  - python3-pexpect
+  - software-properties-common
+  - acl
+  - git
+  - ca-certificates
+  - sqlite3
+  - ccache
+  - unzip
+  - moreutils
+  - colordiff
+  - mtr

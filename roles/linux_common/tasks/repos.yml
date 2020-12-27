@@ -1,0 +1,25 @@
+---
+
+- name: add backports repository
+  become: yes
+  apt_repository:
+    repo: "deb http://deb.debian.org/debian {{ ansible_distribution_release }}-backports main contrib non-free"
+    state: present
+    filename: "{{ ansible_distribution_release }}-backports"
+  when: ansible_distribution == 'Debian'
+
+- name: enable repos
+  become: yes
+  replace:
+    path: /etc/apt/sources.list
+    regexp: '^(deb.+\s*bionic\S*\s+main)\s*$'
+    replace: '\1 restricted universe multiverse'
+  when: ansible_distribution == 'Ubuntu'
+
+- name: enable repos
+  become: yes
+  replace:
+    path: /etc/apt/sources.list
+    regexp: '^(deb.+\s*buster\S*\s+main)\s*$'
+    replace: '\1 contrib non-free'
+  when: ansible_distribution == 'Debian'

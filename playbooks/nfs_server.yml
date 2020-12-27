@@ -1,0 +1,22 @@
+---
+- hosts: NfsServers
+  tasks:
+    - name: Install package
+      apt:
+        name: nfs-kernel-server
+      become: yes
+
+    - name: Set exports
+      copy:
+        content: |
+          {% for share in nfs_shares %}
+          {{ share.path }} {{ share.options }}
+          {% endfor %}
+        dest: /etc/exports
+      become: yes
+      notify: nfs-kernel-server restarted
+
+  handlers:
+  - name: nfs-kernel-server restarted
+    service: name=nfs-kernel-server state=restarted enabled=yes
+    become: yes

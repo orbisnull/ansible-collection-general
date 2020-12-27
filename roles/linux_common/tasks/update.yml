@@ -1,0 +1,24 @@
+---
+# This playbook contains common plays that will be run on all nodes.
+
+- name: Update System
+  become: yes
+  apt: 
+    cache_valid_time: 3600
+    force_apt_get: yes
+    update_cache: yes
+    upgrade: dist
+  when: allow_upgrade
+
+- name: Update System
+  become: yes
+  apt: 
+    cache_valid_time: 3600
+    update_cache: yes
+  when: not allow_upgrade
+
+- name: Check if a reboot is required
+  stat:
+    path: /var/run/reboot-required
+    get_md5: no
+  notify: os reboot

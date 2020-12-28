@@ -1,0 +1,9 @@
+---
+
+- hosts: PostgresqlClients
+  roles:
+  - { role: postgresql, psql_client_install: true }
+
+- hosts: PostgresqlServers
+  roles:
+  - { role: postgresql, psql_server_install: true }

@@ -1,0 +1,28 @@
+---
+
+- name: install apt utils
+  ansible.builtin.apt:
+    update_cache: yes
+    cache_valid_time: 3600
+    name:
+      - apt-transport-https
+      - gnupg2
+  become: yes
+
+- name: install postgresql repository key
+  ansible.builtin.apt_key:
+    url: "{{ psql_apt_key }}"
+  register: psql_repo_key
+  become: yes
+
+- name: add postgresql repository
+  ansible.builtin.apt_repository:
+    repo: "deb http://apt.postgresql.org/pub/repos/apt/ {{ ansible_distribution_release }}-pgdg main"
+  register: psql_repo
+  become: yes
+
+- name: update apt cache
+  ansible.builtin.apt:
+    update_cache: yes
+  when: psql_repo is changed or psql_repo_key is changed
+  become: yes

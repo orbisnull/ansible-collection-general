@@ -2,7 +2,7 @@
   debconf:
     name: locales
     question: locales/default_environment_locale
-    value: "{{ locale }}"
+    value: "{{ system_locale }}"
     vtype: select
   become: yes
 
@@ -12,6 +12,20 @@
     state: present
   become: yes
   loop: "{{ locales }}"
+
+- name: Get current locale and language configuration
+  command: localectl status
+  register: locale_status
+  changed_when: false
+
+- name: Parse 'LANG' from current locale and language configuration
+  set_fact:
+    locale_lang: "{{ locale_status.stdout | regex_search('LANG=([^\n]+)', '\\1') | first }}"
+
+- name: "Configure locale to '{{ config_system_locale }}'"
+  command: "localectl set-locale LANG={{ system_locale }}"
+  become: yes
+  when: locale_lang != system_locale
 
 - name: "Set timezone to {{timezone.areas}}/{{timezone.zone}}"
   community.general.timezone:

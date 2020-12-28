@@ -1,0 +1,34 @@
+---
+# defaults file for postgresql
+psql_apt_key: "https://www.postgresql.org/media/keys/ACCC4CF8.asc"
+
+psql_version: 13
+
+psql_postgis_versions: 3
+psql_postgis_install: True
+
+psql_custom_conf: {
+  "listen_addresses": "'127.0.0.1'",
+  "port": "5432",
+  "password_encryption": "scram-sha-256",
+  "shared_preload_libraries": [ "pg_stat_statements" ],
+}
+
+psql_pg_hba_conf:
+  - {
+      "connection_type": "local",
+      "database": "all",
+      "user": "all",
+      "address": "",
+      "method": "peer"
+    }
+  - {
+      "connection_type": "host",
+      "database": "all",
+      "user": "all",
+      "address": "127.0.0.1/32",
+      "method": "scram-sha-256"
+    }
+
+psql_extensions: []
+#  - "pg-stat-kcache"

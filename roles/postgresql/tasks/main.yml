@@ -1,0 +1,19 @@
+---
+
+- debug:
+    msg: "{{psql_custom_conf}}"
+
+#- meta: end_play
+
+- import_tasks: repository.yml
+
+- name: "Postgresql | Install | Client"
+  block:
+    - import_tasks: install_client.yml
+  when: psql_client_install|default(False) or psql_server_install|default(False)
+
+- name: "Postgresql | Install | Server"
+  block:
+     - import_tasks: install_server.yml
+     - import_tasks: configure.yml
+  when: psql_server_install|default(False)

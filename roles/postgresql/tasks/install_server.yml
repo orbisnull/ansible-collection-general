@@ -1,0 +1,30 @@
+---
+
+- name: "Postgresql | Install | Main"
+  ansible.builtin.apt:
+    name: "{{ psql_server_packages }}"
+    state: present
+  become: yes
+  notify: postgresql restart
+
+- name: "Postgresql | Install | Tools"
+  ansible.builtin.apt:
+    name: "{{ psql_tools }}"
+    state: present
+  become: yes
+
+- name: "Postgresql | Install | Extension"
+  ansible.builtin.apt:
+    name: "postgresql-{{ psql_version }}-{{ item }}"
+  loop: "{{ psql_extensions }}"
+  become: yes
+  notify: postgresql restart
+
+- name: "Postgresql | Install | Postgis"
+  ansible.builtin.apt:
+    name:
+      - "postgresql-{{ psql_version }}-postgis-{{ psql_postgis_versions }}"
+      - "postgresql-{{ psql_version }}-postgis-{{ psql_postgis_versions }}-scripts"
+  when: psql_postgis_install
+  become: yes
+  notify: postgresql restart

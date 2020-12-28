@@ -1,0 +1,20 @@
+---
+# vars file for postgresql
+psql_apt_key: "https://www.postgresql.org/media/keys/ACCC4CF8.asc"
+
+psql_custom_conf_file_name: 01-ansible_managed.conf
+
+psql_client_packages:
+  - "postgresql-doc-{{ psql_version }}"
+  - "postgresql-client-{{ psql_version }}"
+  - postgresql-common
+  - libpq-dev
+
+psql_server_packages:
+  - postgresql
+  - "postgresql-{{ psql_version }}"
+
+psql_tools:
+  - python3-psycopg2
+  - python3-passlib
+  - sudo

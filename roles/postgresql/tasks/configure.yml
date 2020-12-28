@@ -1,0 +1,24 @@
+---
+
+- name: "Postgresql | Configure | Create conf.d dir"
+  ansible.builtin.file:
+    path: "/etc/postgresql/{{ psql_version }}/main/conf.d"
+    state: directory
+    mode: '0755'
+  become: yes
+
+- name: "Postgresql | Configure | Custom conf"
+  template:
+    src: conf.d.conf.j2
+    dest: "/etc/postgresql/{{ psql_version }}/main/conf.d/{{ psql_custom_conf_file_name }}"
+    mode: '0644'
+  notify: postgresql restart
+  become: yes
+
+- name: "Postgresql | Configure | pg_hba.conf"
+  template:
+    src: pg_hba.conf.j2
+    dest: "/etc/postgresql/{{ psql_version }}/main/pg_hba.conf"
+    mode: '0644'
+  notify: postgresql restart
+  become: yes

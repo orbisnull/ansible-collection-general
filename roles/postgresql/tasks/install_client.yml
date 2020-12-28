@@ -1,0 +1,5 @@
+- name: "Postgresql | Install | Client | Install"
+  ansible.builtin.apt:
+    name: "{{ psql_client_packages }}"
+    state: present
+  become: yes

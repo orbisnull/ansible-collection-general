@@ -1,0 +1,151 @@
+---
+
+- name: PHP | Configure | Version | Current | Get
+  become: yes
+  shell: source /etc/profile && phpbrew list | grep "*" | awk -F- '{print $2;}' | sed 's/^[ \t]*//;s/[ \t]*$//'
+  args:
+    executable: /bin/bash
+  register: phpbrew_current_output
+  changed_when: false
+
+- name: "PHP | Configure | Version | Current | Register | {{ phpbrew_current_output.stdout }}"
+  set_fact:
+    php_current_used_version: "{{ phpbrew_current_output.stdout }}"
+    cacheable: yes
+
+- name: PHP | Configure | Version | Latest | Get
+  become: yes
+  shell: source /etc/profile && phpbrew list | sort  -V | head -n 1 | awk -F- '{print $2;}' | sed 's/^[ \t]*//;s/[ \t]*$//'
+  args:
+    executable: /bin/bash
+  register: phpbrew_list_output
+  changed_when: false
+
+- name: "PHP | Configure | Version | Latest | Register | {{ phpbrew_list_output.stdout }}"
+  set_fact:
+    php_version: "{{ phpbrew_list_output.stdout }}"
+    cacheable: yes
+
+
+- name: "PHP | Configure | Vesrion | Switch | {{ php_current_used_version }} -> {{ php_version }}"
+  become: yes
+  shell: source /etc/profile; phpbrew switch "{{php_version}}"
+  args:
+    executable: /bin/bash
+  when: php_version > php_current_used_version
+
+- set_fact:
+    php_socket: /opt/phpbrew/php/php-{{php_version}}/var/run/php-fpm.sock
+
+- name: PHP | Configure | php-fpm | Configure
+  become: yes
+  template:
+    src: php-fpm.conf.j2
+    dest: /opt/phpbrew/php/php-{{php_version}}/etc/php-fpm.conf
+    owner: root
+    group: root
+    mode: 0644
+  notify: php restart
+
+- name: PHP | Configure | php-fpm | Pool | Configure | php-www
+  become: yes
+  template:
+    src: www.conf.j2
+    dest: /opt/phpbrew/php/php-{{php_version}}/etc/php-fpm.d/www.conf
+    owner: root
+    group: root
+    mode: 0644
+  notify: php restart
+
+- name: PHP | Configure | Configure | php.ini
+  become: yes
+  template:
+    src: php.ini.j2
+    dest: /opt/phpbrew/php/php-{{php_version}}/etc/php.ini
+    owner: root
+    group: root
+    mode: 0644
+  notify: php reload
+
+- name: PHP | Configure | Service | Check php version
+  shell: cat /lib/systemd/system/phpbrew-fpm.service | grep PIDFile |  grep -q php-"{{php_version}}"
+  become: yes
+  args:
+    executable: /bin/bash
+  changed_when: false
+  ignore_errors: yes
+  register: php_check_service_file_result
+
+- name: PHP | Configure | Service | Remove previous version
+  file:
+    path: /lib/systemd/system/phpbrew-fpm.service
+    state: absent
+  when: php_check_service_file_result.rc != 0
+  become: yes
+
+- name: PHP | Configure | Service | Create
+  become: yes
+  shell: source /etc/profile; phpbrew use "{{php_version}}"; phpbrew fpm setup --systemctl php-"{{php_version}}"
+  args:
+    executable: /bin/bash
+    creates: /lib/systemd/system/phpbrew-fpm.service
+  notify: php restart
+  register: systemd_php_unit
+
+- name: PHP | Configure | Service | Reload daemons
+  systemd:
+    daemon_reload: yes
+  when: systemd_php_unit.changed
+  become: yes
+
+- name: PHP | Configure | Service | Enable
+  become: yes
+  service:
+    name: phpbrew-fpm
+    enabled: yes
+    state: started
+
+- shell: source /etc/profile; php -i | egrep "^extension_dir" | awk -F " => " '{print $2}'
+  args:
+    executable: /bin/bash
+  register: php_estension_dir_result
+  changed_when: false
+
+- set_fact:
+    php_extension_dir: "{{php_estension_dir_result.stdout}}"
+    cacheable: true
+
+- shell: source /etc/profile; php -i | egrep "^Scan this dir for additional .ini files" | awk -F " => " '{print $2}'
+  args:
+    executable: /bin/bash
+  register: php_additional_config_dir_result
+  changed_when: false
+
+- set_fact:
+    php_additional_config_dir: "{{php_additional_config_dir_result.stdout}}"
+    cacheable: true
+
+- include_tasks: install_extensions.yml 
+  vars:
+    extension_dir: "{{php_extension_dir}}"
+  loop: "{{php_additional_extensions}}"
+  loop_control:
+    loop_var: extension
+
+- name: Update nginx config
+  become: yes
+  template:
+    src: nginx-upstream.conf.j2
+    dest: /etc/nginx/conf.d/01-upstream.conf
+    owner: root
+    group: root
+    mode: 0644
+  notify: nginx restart
+  ignore_errors: yes
+ 
+- name: create index for default host
+  template:
+    src: default-index.php.j2
+    dest: /var/www/default.dev/public/index.php
+  ignore_errors: yes
+  become: yes

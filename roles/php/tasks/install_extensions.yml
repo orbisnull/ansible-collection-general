@@ -1,0 +1,21 @@
+---
+
+- debug: msg="{{extension_dir}}/{{extension}}.so"
+
+- name: "Install extensions {{extension}}"
+  become: yes
+  shell: "source /etc/profile && phpbrew ext install {{extension}}"
+  args:
+    executable: /bin/bash
+    chdir: /opt/phpbrew/
+    creates: "{{extension_dir}}/{{extension}}.so"
+  notify: php restart
+
+- name: "Enable extensions {{extension}}"
+  become: yes
+  shell: "source /etc/profile && phpbrew ext enable {{extension}}"
+  args:
+    executable: /bin/bash
+    chdir: /opt/phpbrew/
+    creates: "{{php_additional_config_dir}}/{{extension}}.ini"
+  notify: php restart

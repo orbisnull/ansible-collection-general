@@ -1,0 +1,93 @@
+---
+
+- name: PHP | Phpbrew | Create phpbrew dir
+  become: yes
+  file:
+    path: /opt/phpbrew
+    state: directory
+    mode: 0755
+
+- name: PHP | Phpbrew | Check exist
+  stat:
+    path: /usr/local/bin/phpbrew
+    get_attributes: no
+    get_checksum: no
+    get_md5: no
+    get_mime: no
+  register: phpbrew_exist_result
+
+- name: PHP | Phpbrew | Download
+  become: yes
+  get_url:
+    url: https://github.com/phpbrew/phpbrew/raw/master/phpbrew
+    dest: /usr/local/bin/phpbrew
+    mode: 0755
+    force: no
+  when: not phpbrew_exist_result.stat.exists
+
+- name: PHP | Phpbrew | Update
+  command: /usr/local/bin/phpbrew self-update
+  become: yes
+  when: phpbrew_exist_result.stat.exists
+
+- name: PHP | Phpbrew | Init
+  become: yes
+  shell: PHPBREW_HOME=/opt/phpbrew PHPBREW_ROOT=/opt/phpbrew  /usr/local/bin/phpbrew init
+  args:
+    executable: /bin/bash
+    creates: /opt/phpbrew/bashrc
+    chdir: /opt/phpbrew/
+
+- name: PHP | Phpbrew | Configure paths
+  become: yes
+  blockinfile:
+    path: /opt/phpbrew/bashrc
+    insertafter: "# PHPBREW_PATH: the bin path of the current php."
+    content: |
+      export PHPBREW_HOME="/opt/phpbrew"
+      export PHPBREW_ROOT="/opt/phpbrew"
+
+- name: PHP | Phpbrew | Add phpbrew to profile
+  become: yes
+  copy:
+    dest: /etc/profile.d/z999-1-phpbrew.sh
+    content: '. /opt/phpbrew/bashrc'
+    mode: 0755
+
+#- name: PHP | Phpbrew | Self update
+#  become: yes
+#  shell: "source /etc/profile && phpbrew self-update"
+#  args:
+#    executable: /bin/bash
+#  changed_when: False
+
+- name: PHP | Phpbrew | update
+  become: yes
+  shell: "source /etc/profile && phpbrew update"
+  args:
+    executable: /bin/bash
+  changed_when: False
+
+- name: PHP | Phpbrew | Get latest known php version
+  become: yes
+  shell: "source /etc/profile && phpbrew known | grep {{ php_version_minor }} | awk '{print $2}' | rev | cut -c 2- | rev"
+  args:
+    executable: /bin/bash
+  register: phpbrew_known_result
+  changed_when: False
+
+- set_fact:
+    php_version_latest: "{{phpbrew_known_result.stdout}}"
+
+- name: "PHP | Phpbrew | Install PHP {{ php_version_latest }}"
+  become: yes
+  shell: "source /etc/profile && phpbrew install php-{{php_version_latest}} +default +fpm +dbs +exif +imap +curl +gd +intl +gettext +iconv +opcache +xmlrpc -- --enable-gd --with-fpm-systemd --with-ldap  --with-ldap-sasl  --with-gd --with-jpeg  --with-xpm  --with-webp  --with-freetype-dir"
+  args:
+    executable: /bin/bash
+    creates: "/opt/phpbrew/php/php-{{ php_version_latest }}/bin/php"
+    chdir: /opt/phpbrew/
+  register: php_install_result
+
+- debug:
+    msg: "Install php-{{ php_version_latest }}: Done"
+  when: php_install_result is defined and php_install_result.rc == 0

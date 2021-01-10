@@ -1,0 +1,62 @@
+---
+# defaults file for php
+
+php_depends_packages:
+  - wget
+  - ca-certificates
+  - git
+  - php-cli
+  - php-bz2
+  - git
+  - make
+  - gcc
+  - g++
+  - autoconf
+  - automake
+  - pkg-config
+  - libxml2-dev
+  - libssl-dev
+  - libbz2-dev
+  - libmcrypt-dev
+  - libreadline-dev
+  - zlib1g-dev
+  - libxslt1-dev
+  - libsystemd-dev
+  - bison
+  - re2c
+  - libpng-dev
+  - libjpeg-dev
+  - libwebp-dev
+  - libxmp-dev
+  - libfreetype6-dev
+  - libgd-dev
+  - libldap2-dev
+  - libsasl2-dev
+  - libcurl4-openssl-dev
+  - postgresql-client-12
+  - libpq-dev
+  - ccache
+  - libmagickwand-dev
+  - libmagickcore-dev
+  - imagemagick
+  - libgmp-dev
+  - snmp-mibs-downloader
+  - sqlite3
+  - libsqlite3-dev
+  - libonig-dev
+  - libzip-dev
+
+php_extensions_depends_packages: []
+
+php_version_minor: 7.4
+
+php_additional_extensions:
+  - msgpack
+  - apcu
+  - imagick
+  - opcache
+  - ds
+  - igbinary
+  - xdebug
+
+php_additional_repos: []

@@ -1,0 +1,47 @@
+---
+
+- set_fact:
+    current_user: "{{ansible_user_id}}"
+
+- file:
+    path: /opt/src/composer
+    state: directory
+    mode: 755
+    owner: "{{current_user}}"
+  become: yes
+  changed_when: false
+
+- name: install composer
+  shell: |
+    source /etc/profile
+    EXPECTED_SIGNATURE="$(wget -q -O - https://composer.github.io/installer.sig)"
+    php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');"
+    ACTUAL_SIGNATURE="$(php -r "echo hash_file('SHA384', 'composer-setup.php');")"
+    if [ "$EXPECTED_SIGNATURE" != "$ACTUAL_SIGNATURE" ]
+    then
+      >&2 echo 'ERROR: Invalid installer signature'
+      rm composer-setup.php
+      exit 1
+    fi
+    php composer-setup.php --quiet --install-dir=/opt/src/composer --filename=composer.phar
+    RESULT=$?
+    rm composer-setup.php
+    exit $RESULT
+  args:
+    executable: /bin/bash
+    chdir: /opt/src/composer
+
+- copy:
+    src: /opt/src/composer/composer.phar
+    dest: /usr/local/bin/composer
+    remote_src: yes
+    mode: 0755
+  become: yes
+
+- file:
+    path: /opt/src/composer
+    state: absent
+  become: yes
+  changed_when: false
+
+

@@ -1,0 +1,34 @@
+---
+# tasks file for php
+
+- name: PHP | Prepare Install | Repos | Add | Src
+  become: yes
+  apt_repository:
+    repo: "{{ item }}"
+    state: present
+  with_items: "{{ src_repos }}"
+
+- name: PHP | Prepare Install | Repos | Add | Additional
+  become: yes
+  apt_repository:
+    repo: "{{ item }}"
+    state: present
+  with_items: "{{ php_additional_repos }}"
+
+- name: PHP | Prepare Install | Install | build-dep
+  become: yes
+  apt:
+    name: php
+    state: build-dep
+
+- name: PHP | Prepare Install |  Install | Packages | Additional
+  become: yes
+  apt:
+    name: "{{ php_depends_packages }}"
+    state: latest
+
+- name: PHP | Prepare Install | Install | Packages | Extensions Depends
+  become: yes
+  apt:
+    name: "{{ php_extensions_depends_packages }}"
+    state: latest

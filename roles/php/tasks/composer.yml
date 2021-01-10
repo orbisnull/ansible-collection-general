@@ -1,0 +1,21 @@
+---
+
+- name: check composer
+  shell: source /etc/profile; composer -V
+  args:
+    executable: /bin/bash
+  register: composer_exist_result
+  ignore_errors: yes
+  changed_when: false
+
+- name: install composer
+  include_tasks: composer_install.yml
+  when:  composer_exist_result.rc != 0
+
+- name: update composer
+  shell: source /etc/profile; composer self-update 2>&1
+  args:
+    executable: /bin/bash
+  register: composer_update_result
+  changed_when: not composer_update_result.stdout is search ("You are already using composer version")
+  become: yes

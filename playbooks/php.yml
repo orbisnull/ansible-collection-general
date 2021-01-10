@@ -1,0 +1,5 @@
+---
+- hosts: PhpServers
+  roles:
+    - { role: postgresql, psql_client_install: true }
+    - php

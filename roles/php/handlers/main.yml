@@ -1,0 +1,22 @@
+---
+# handlers file for php
+
+- name: php reload
+  become: yes
+  service:
+    name: phpbrew-fpm
+    state: reloaded
+
+- name: php restart
+  become: yes
+  service:
+    name: phpbrew-fpm
+    state: restarted
+
+- name: nginx restart
+  become: yes
+  service:
+    name: nginx
+    state: restarted
+  ignore_errors: true
+

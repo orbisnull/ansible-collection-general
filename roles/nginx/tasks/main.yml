@@ -1,0 +1,50 @@
+---
+# tasks file for nginx
+
+- import_tasks: repository.yml
+
+- name: Nginx | Main | check nginx is installed
+  shell: nginx -v 2>&1
+  args: 
+    executable: /bin/bash
+  ignore_errors: yes
+  register: nginx_exist_first_result
+  changed_when: false
+
+- name: Nginx | Main | check nginx version
+  shell: nginx -v 2>&1  | awk -F "/" '{print $2}' | egrep "^[0-9]"
+  args: 
+    executable: /bin/bash
+  ignore_errors: yes
+  register: nginx_exist_result
+  changed_when: false
+  when: nginx_exist_first_result.rc == 0
+
+- name: Nginx | Main | Clear gathered facts
+  meta: clear_facts
+  when: nginx_exist_first_result != 0 or  nginx_exist_result is not defined or  nginx_exist_result.rc != 0
+
+- name: Nginx | Main | Set fact nginx_installed_version
+  set_fact:
+    nginx_installed_version: "{{nginx_exist_result.stdout}}"
+    cacheable: true
+  when: nginx_exist_first_result == 0 and nginx_exist_result is defined and  nginx_exist_result.rc == 0
+
+- name: Nginx | Main | Setup
+  setup:
+  when: nginx_exist_first_result != 0 or  nginx_exist_result is not defined or  nginx_exist_result.rc != 0
+
+- name: Nginx | Main | Show current installed nginx with version
+  debug:
+    msg: "Current installed nginx with version: {{nginx_installed_version}}"
+  when: nginx_installed_version is defined
+
+- name: Nginx | Main | Compile nginx from src
+  include_tasks: compile.yml
+  when: nginx_installed_version is not defined
+
+- name: Nginx | Main | Configure
+  import_tasks: configure.yml
+
+- name: Nginx | Main | Clear
+  import_tasks: clear.yml

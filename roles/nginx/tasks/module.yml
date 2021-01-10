@@ -1,0 +1,25 @@
+---
+
+- debug:
+    msg: "Prepare {{module.name}}..."
+
+- get_url:
+    url: "{{module.url}}"  
+    dest: "{{modules_path}}/{{module.name}}.zip"
+
+- unarchive:
+    src: "{{modules_path}}/{{module.name}}.zip"
+    dest: "{{modules_path}}"
+    remote_src: yes
+
+- shell: "ls -d */ | cut -f1 -d'/' | grep {{module.name}}"
+  args:
+    executable: /bin/bash
+    chdir: "{{modules_path}}"
+  register: module_dir
+
+
+- shell: "mv {{modules_path}}/{{module_dir.stdout}} {{modules_path}}/{{module.name}}"
+  args:
+    executable: /bin/bash
+    chdir: "{{modules_path}}"

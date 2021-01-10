@@ -1,0 +1,12 @@
+---
+- name: Nginx | Main | Clear | Clear root build dir
+  file:
+    path: "{{build_root_dir}}"
+    state: "{{item}}"
+    mode: 0755
+    owner: "{{ current_user_id }}"
+    group: "{{ current_group_id }}"
+  with_items:
+    - absent
+    - directory
+  become: yes

@@ -1,0 +1,54 @@
+---
+- name: Enable service nginx, and set running state
+  become: yes
+  service:
+    name: nginx
+    enabled: yes
+    state: started
+
+- name: Create nginx conf dirs
+  become: yes
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: 0775
+  with_items:
+    - /etc/nginx/conf.d
+    - /etc/nginx/conf.sites.d
+    - /etc/nginx/sites
+
+- name: Rm dist config
+  become: yes
+  file:
+    path: "{{ item }}"
+    state: absent
+  with_items:
+    - /etc/nginx/conf.d/default.conf
+
+- name: Create nginx configs
+  become: yes
+  template:
+    src: "{{ item.src }}"
+    dest: "/etc/nginx/{{ item.path }}"
+    mode: "{{ item.mode }}"
+    owner: root
+    group: root
+  with_filetree:  templates/etc/
+  when: item.state == 'file'
+  notify: nginx reload
+
+- name: Create default site dir
+  become: yes
+  file: 
+    path: /var/www/default.dev/public
+    state: directory
+
+- name: create default site
+  become: yes
+  template:
+    src: "{{ item.src }}"
+    dest: "/var/www/default.dev/public/{{ item.path }}"
+  with_filetree:  templates/www/default.dev/public/
+  when: item.state == 'file'

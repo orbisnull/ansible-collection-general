@@ -1,0 +1,10 @@
+server {
+  listen 80 default_server;
+  server_name default.dev default.dev.local dev.local;
+  root           /var/www/default.dev/public/;
+  index          index.html;
+  try_files $uri /index.html;
+
+  access_log /var/log/nginx/default.site.access.log;
+  error_log /var/log/nginx/default.site.error.log;
+}

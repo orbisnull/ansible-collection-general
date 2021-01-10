@@ -1,0 +1,3 @@
+if ($http_referer ~ "(semalt\.com|buttons-for-website\.com|Get-Free-Traffic-Now\.com|hulfingtonpost\.com|darodar\.com|addons\.mozilla\.org|googlsucks\.com|aliexpress\.com|theguardlan\.com|xn--c1aay4a\.xn--n1afbe8e\.xn--d1acpjx3f\.xn--e1abxp\.xn--e1ap\.xn--80a1ajdbb8h\.xn--p1ai)") {
+  return 403;
+}

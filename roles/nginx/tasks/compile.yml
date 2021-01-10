@@ -1,0 +1,135 @@
+---
+
+- name: Nginx | Main | Compile | Apdate Apt
+  ansible.builtin.apt:
+    update_cache: yes
+    cache_valid_time: 36000
+  become: yes
+
+- name: Nginx | Main | Compile | Upgrade packages
+  ansible.builtin.apt:
+    upgrade: yes
+  become: yes
+
+- name: Nginx | Main | Compile | Install build packages
+  ansible.builtin.apt:
+    name: "{{ nginx_build_packages }}"
+    state: latest
+  become: yes
+
+- name: Nginx | Main | Compile | Install nginx buld-dep
+  ansible.builtin.apt:
+    name: nginx
+    state: build-dep
+  become: yes
+
+- name: Nginx | Main | Compile | Get current user
+  command: id -u
+  register: current_user_result
+
+- name: Nginx | Main | Compile | Set fact current user
+  set_fact:
+    current_user_id: "{{current_user_result.stdout}}"
+
+- name: Nginx | Main | Compile | Get current group
+  command: id -g
+  register: current_group_result
+
+- name: Nginx | Main | Compile | Set fact current group
+  set_fact: 
+    current_group_id: "{{current_group_result.stdout}}"
+
+- name: Nginx | Main | Compile | Set fact root build dir
+  set_fact: 
+    build_root_dir: "/opt/src/nginx"
+
+- name: Nginx | Main | Compile | Clear
+  import_tasks: clear.yml
+
+- name: Nginx | Main | Compile | Get nginx source
+  command: apt-get source nginx
+  args:
+    chdir: "{{build_root_dir}}"
+
+- name: Nginx | Main | Compile | get nginx version
+  shell:  ls | egrep "^nginx-[0-9|\.]+$" | awk -F "-" '{print $2}'
+  args:
+    chdir: "{{build_root_dir}}"
+  register: nginx_version_result
+
+- name: Nginx | Main | Compile | Set fact nginx version
+  set_fact:
+    nginx_version: "{{nginx_version_result.stdout}}"
+
+- name: Nginx | Main | Compile | Set fact nginx build dir
+  set_fact:
+    build_nginx_dir: "{{build_root_dir}}/nginx-{{nginx_version}}"
+
+- name: Nginx | Main | Compile | Set fact nginx modules dir
+  set_fact:
+    build_nginx_modules_dir: "{{build_root_dir}}/nginx_modules"
+
+- name: Nginx | Main | Compile | Clear modules dir
+  file:
+    path: "{{build_nginx_modules_dir}}"
+    state: absent
+
+- name: Nginx | Main | Compile | Create modules dir
+  file:
+    path: "{{build_nginx_modules_dir}}"
+    state: directory
+    mode: 0755
+
+- name: Nginx | Main | Compile | Modules
+  include_tasks: module.yml
+  vars:
+    modules_path: "{{build_nginx_modules_dir}}"
+  loop: "{{nginx_additional_modules}}"
+  loop_control:
+    loop_var: module
+
+- name: Nginx | Main | Compile | Rewrite debian/rules
+  lineinfile:
+    path: "{{build_nginx_dir}}/debian/rules"
+    regexp: '^(\s*)CFLAGS=(.+)LDFLAGS\)"(\s*)$'
+    line: '     CFLAGS="" ./configure --prefix=/etc/nginx --sbin-path=/usr/sbin/nginx --modules-path=/usr/lib/nginx/modules --conf-path=/etc/nginx/nginx.conf --error-log-path=/var/log/nginx/error.log --http-log-path=/var/log/nginx/access.log --pid-path=/var/run/nginx.pid --lock-path=/var/run/nginx.lock --http-client-body-temp-path=/var/cache/nginx/client_temp --http-proxy-temp-path=/var/cache/nginx/proxy_temp --http-fastcgi-temp-path=/var/cache/nginx/fastcgi_temp --http-uwsgi-temp-path=/var/cache/nginx/uwsgi_temp --http-scgi-temp-path=/var/cache/nginx/scgi_temp --user=nginx --group=nginx --with-compat --with-file-aio --with-threads --with-http_dav_module --with-http_addition_module --with-http_auth_request_module --with-http_gunzip_module --with-http_gzip_static_module --with-http_realip_module --with-http_secure_link_module --with-http_slice_module --with-http_ssl_module --with-http_stub_status_module --with-http_sub_module --with-http_v2_module --with-http_realip_module --add-module={{build_nginx_modules_dir}}/headers-more --add-module={{build_nginx_modules_dir}}/cache_purge --add-module={{build_nginx_modules_dir}}/devel_kit --add-module={{build_nginx_modules_dir}}/requestid  --with-cc-opt="$(CFLAGS)" --with-ld-opt="$(LDFLAGS)"'
+
+- name: Nginx | Main | Compile | Rewrite debian/changelog
+  lineinfile:
+    path: "{{build_nginx_dir}}/debian/changelog"
+    insertbefore: BOF
+    line: |
+      nginx ({{nginx_version}}-1~akademiano~{{ansible_distribution_release}}) {{ansible_distribution_release}}; urgency=low
+
+        * {{nginx_version}}
+
+       -  {{nginx_build_user}} <{{nginx_build_user_email}}>  {{nginx_build_date}}
+
+- name: Nginx | Main | Compile | Compile nginx with modules
+  shell: "debuild --preserve-envvar=CCACHE_DIR --preserve-envvar=CCACHE_PREFIX --prepend-path=/usr/lib/ccache -us -uc"
+  args:
+    executable: /bin/bash
+    chdir: "{{build_nginx_dir}}"
+
+- name: Nginx | Main | Compile | Get deb package
+  shell: 'ls | grep ".deb$" | grep -v "\-dbg"'
+  args:
+    executable: /bin/bash
+    chdir: "{{build_root_dir}}"
+  register: nginx_deb_result
+
+- name: Nginx | Main | Compile | Set fact deb package
+  set_fact:
+    nginx_deb: "{{build_root_dir}}/{{nginx_deb_result.stdout}}"
+
+- name: Nginx | Main | Compile | Install nginx
+  ansible.builtin.apt:
+    deb: "{{nginx_deb}}"
+    state: present
+  become: yes
+
+- name: Nginx | Main | Compile | Hold nginx package
+  shell: apt-mark hold nginx
+  args:
+    executable: /bin/bash
+  become: yes

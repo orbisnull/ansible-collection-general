@@ -45,6 +45,8 @@ php_depends_packages:
   - libsqlite3-dev
   - libonig-dev
   - libzip-dev
+  - libkrb5-dev
+  - libc-client2007e-dev
 
 php_extensions_depends_packages: []
 

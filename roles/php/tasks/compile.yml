@@ -29,6 +29,7 @@
   command: /usr/local/bin/phpbrew self-update
   become: yes
   when: phpbrew_exist_result.stat.exists
+  changed_when: False
 
 - name: PHP | Phpbrew | Init
   become: yes
@@ -53,13 +54,6 @@
     dest: /etc/profile.d/z999-1-phpbrew.sh
     content: '. /opt/phpbrew/bashrc'
     mode: 0755
-
-#- name: PHP | Phpbrew | Self update
-#  become: yes
-#  shell: "source /etc/profile && phpbrew self-update"
-#  args:
-#    executable: /bin/bash
-#  changed_when: False
 
 - name: PHP | Phpbrew | update
   become: yes

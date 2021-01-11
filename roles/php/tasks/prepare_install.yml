@@ -32,3 +32,10 @@
   apt:
     name: "{{ php_extensions_depends_packages }}"
     state: latest
+
+- name:  PHP | Prepare Install | Create a symbolic link libc-client.a
+  become: yes
+  file:
+    src: /usr/lib/libc-client.a
+    dest: /usr/lib/x86_64-linux-gnu/libc-client.a
+    state: link
